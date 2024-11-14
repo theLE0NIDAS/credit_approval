@@ -19,12 +19,19 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = ['customer_id', 'first_name', 'last_name', 'phone_number', 'age']
 
-class LoanResponseSerializer(serializers.ModelSerializer):
+class LoanIDResponseSerializer(serializers.ModelSerializer):
     customer = CustomerSerializer(read_only=True)
 
     class Meta:
         model = Loan
-        fields = ['loan_id', 'customer', 'loan_amount', 'interest_rate', 'monthly_repayment', 'tenure']
+        fields = ['loan_id', 'customer', 'loan_amount', 'interest_rate', 'monthly_installment', 'tenure']
+
+class LoanCIDResponseSerializer(serializers.ModelSerializer):
+    repayments_left = serializers.IntegerField()
+
+    class Meta:
+        model = Loan
+        fields = ['loan_id', 'loan_amount', 'interest_rate', 'monthly_installment', 'repayments_left']
 
 class EligibilityRequestSerializer(serializers.Serializer):
     class Meta:

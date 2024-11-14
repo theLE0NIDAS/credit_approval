@@ -2,7 +2,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Loan
-from .serializers import CreateLoanRequestSerializer, CreateLoanResponseSerializer, LoanResponseSerializer, CustomerSerializer, EligibilityRequestSerializer, EligibilityResponseSerializer
+from .serializers import CreateLoanRequestSerializer, CreateLoanResponseSerializer, LoanIDResponseSerializer, LoanCIDResponseSerializer, CustomerSerializer, EligibilityRequestSerializer, EligibilityResponseSerializer
 from customers.models import Customer
 
 class CheckEligibility(APIView):
@@ -118,7 +118,7 @@ class ViewLoan(APIView):
         try:
             loan = Loan.objects.get(loan_id=loan_id)
             
-            loan_data = LoanResponseSerializer(loan).data
+            loan_data = LoanIDResponseSerializer(loan).data
             
             customer_data = CustomerSerializer(loan.customer).data
             
@@ -137,7 +137,7 @@ class ViewLoans(APIView):
             
             loans = Loan.objects.filter(customer=customer)
             
-            loans_data = LoanResponseSerializer(loans, many=True).data
+            loans_data = LoanCIDResponseSerializer(loans, many=True).data
             
             for loan, loan_data in zip(loans, loans_data):
                 loan_data["repayments_left"] = loan.tenure - loan.emis_paid_on_time.count(True)
