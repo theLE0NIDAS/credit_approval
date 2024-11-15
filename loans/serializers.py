@@ -7,14 +7,6 @@ class CreateLoanRequestSerializer(serializers.ModelSerializer):
         model = Loan
         fields = ['customer', 'loan_amount', 'interest_rate', 'tenure']
 
-# class CreateLoanResponseSerializer(serializers.Serializer):
-#     approval = serializers.BooleanField()
-#     customer = serializers.IntegerField()
-#     loan_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
-#     interest_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
-#     tenure = serializers.IntegerField()
-#     monthly_installment = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
-
 class CreateLoanResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Loan

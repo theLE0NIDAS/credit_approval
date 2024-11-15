@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'customers',
     'loans',
     'rest_framework',
+    'background_task',
 ]
 
 MIDDLEWARE = [
@@ -91,8 +92,8 @@ DATABASES = {
         'NAME': os.getenv('POSTGRES_DB'),
         'USER': os.getenv('POSTGRES_USER'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': 'localhost',
-        'PORT': '5433',
+        'HOST': 'db',
+        'PORT': '5432',
     }
 }
 

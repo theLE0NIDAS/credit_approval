@@ -5,24 +5,21 @@ from .tasks import ingest_loan_data
 from .models import Loan
 from .serializers import CreateLoanRequestSerializer, CreateLoanResponseSerializer, LoanIDResponseSerializer, LoanCIDResponseSerializer, CustomerSerializer, EligibilityRequestSerializer, EligibilityResponseSerializer
 from customers.models import Customer
+from datetime import date
 
 class IngestData(APIView):
-    def post(self, request):
-        loan_file = request.FILES.get('loan_file')
+    def post(self, request, *args, **kwargs):
+        loan_file_path = request.data.get('loan_file_path')
 
-        loan_file_path = f"tmp/{loan_file.name}"
+        if not loan_file_path:
+            return Response({"error": "File paths are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        with open(loan_file_path, 'wb') as f:
-            for chunk in loan_file.chunks():
-                f.write(chunk)
-
-        ingest_loan_data.delay(loan_file_path)
+        ingest_loan_data(loan_file_path)
 
         return Response({"message": "Data ingestion started. This may take a while."}, status=status.HTTP_200_OK)
 
 class CheckEligibility(APIView):
     def post(self, request):
-
         request_serializer = EligibilityRequestSerializer(data=request.data)
 
         if not request_serializer.is_valid():
@@ -37,6 +34,8 @@ class CheckEligibility(APIView):
             customer = Customer.objects.get(customer_id=customer_id)
 
             credit_score = self.calculate_credit_score(customer)
+
+            print(credit_score)
             
             if credit_score > 50:
                 approval = True
@@ -66,6 +65,8 @@ class CheckEligibility(APIView):
             }
             response_serializer = EligibilityResponseSerializer(response_data)
 
+            print(response_serializer.data)
+
             return Response(response_serializer.data, status=status.HTTP_200_OK)
         
         except Customer.DoesNotExist:
@@ -75,18 +76,33 @@ class CheckEligibility(APIView):
 
     def calculate_credit_score(self, customer):
         loans = Loan.objects.filter(customer=customer)
-        current_loans_sum = sum(loan.loan_amount for loan in loans)
         
+        current_loans_sum = sum(loan.loan_amount for loan in loans)
         if current_loans_sum > customer.approved_limit:
             return 0
-        
-        total_emi = sum(loan.monthly_installment for loan in loans)
-        if total_emi > (0.5 * float(customer.monthly_salary)):
-            return 0
 
-        credit_score = min(100, max(0, 50 + len(loans) * 10))
-        
+        credit_score = float(0.0)
+
+        total_loan_tenure = sum(loan.tenure for loan in loans)
+        total_emis_paid = sum(loan.emis_paid_on_time for loan in loans)
+        if total_loan_tenure > 0: 
+            on_time_payment_ratio = total_emis_paid / total_loan_tenure
+            credit_score += float(on_time_payment_ratio * 40)
+
+        total_loans = len(loans)
+        credit_score += float(min(total_loans * 5, 20))  
+
+        current_year = date.today().year
+        loans_this_year = loans.filter(start_date__year=current_year)
+        credit_score += float(min(len(loans_this_year) * 5, 20)) 
+
+        approved_volume_ratio = current_loans_sum / customer.approved_limit if customer.approved_limit > 0 else 0
+        credit_score += float(min(approved_volume_ratio * 20, 20))  
+
+        credit_score = float(max(0, min(credit_score, 100)))
+
         return credit_score
+
     
     def calculate_monthly_installment(self, loan_amount, interest_rate, tenure):
         monthly_interest_rate = interest_rate / (12 * 100)
@@ -106,6 +122,8 @@ class CreateLoan(APIView):
 
             eligibility_check = CheckEligibility()
             eligibility_data = eligibility_check.post(request).data
+
+            print(eligibility_data)
 
             if not eligibility_data['approval']:
                 return Response({

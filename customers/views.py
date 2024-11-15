@@ -8,16 +8,13 @@ from loans.models import Loan
 import math
 
 class IngestData(APIView):
-    def post(self, request):
-        customer_file = request.FILES.get('customer_file')
+    def post(self, request, *args, **kwargs):
+        customer_file_path = request.data.get('customer_file_path')
 
-        customer_file_path = f"tmp/{customer_file.name}"
+        if not customer_file_path:
+            return Response({"error": "File paths are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        with open(customer_file_path, 'wb') as f:
-            for chunk in customer_file.chunks():
-                f.write(chunk)
-
-        ingest_customer_data.delay(customer_file_path)
+        ingest_customer_data(customer_file_path)
 
         return Response({"message": "Data ingestion started. This may take a while."}, status=status.HTTP_200_OK)
 
