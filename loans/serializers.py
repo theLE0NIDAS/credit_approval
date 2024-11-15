@@ -7,12 +7,18 @@ class CreateLoanRequestSerializer(serializers.ModelSerializer):
         model = Loan
         fields = ['customer', 'loan_amount', 'interest_rate', 'tenure']
 
+# class CreateLoanResponseSerializer(serializers.Serializer):
+#     approval = serializers.BooleanField()
+#     customer = serializers.IntegerField()
+#     loan_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+#     interest_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
+#     tenure = serializers.IntegerField()
+#     monthly_installment = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
+
 class CreateLoanResponseSerializer(serializers.ModelSerializer):
-    loan_approved = serializers.BooleanField()
-    message = serializers.CharField()
     class Meta:
         model = Loan
-        fields = ['loan_id', 'customer', 'loan_approved', 'message', 'monthly_installment']
+        fields = ['customer', 'loan_amount', 'interest_rate', 'tenure', 'monthly_installment']
 
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,11 +33,14 @@ class LoanIDResponseSerializer(serializers.ModelSerializer):
         fields = ['loan_id', 'customer', 'loan_amount', 'interest_rate', 'monthly_installment', 'tenure']
 
 class LoanCIDResponseSerializer(serializers.ModelSerializer):
-    repayments_left = serializers.IntegerField()
+    repayments_left = serializers.SerializerMethodField()
 
     class Meta:
         model = Loan
         fields = ['loan_id', 'loan_amount', 'interest_rate', 'monthly_installment', 'repayments_left']
+    
+    def get_repayments_left(self, obj):
+        return obj.tenure - obj.emis_paid_on_time
 
 class EligibilityRequestSerializer(serializers.Serializer):
     class Meta:
@@ -41,7 +50,7 @@ class EligibilityRequestSerializer(serializers.Serializer):
 class EligibilityResponseSerializer(serializers.Serializer):
     approval = serializers.BooleanField()
     corrected_interest_rate = serializers.DecimalField(max_digits=5, decimal_places=2, required=False, allow_null=True)
-
-    class Meta:
-        model = Loan
-        fields = ['customer', 'approval', 'interest_rate', 'corrected_interest_rate', 'tenure', 'monthly_installment']
+    customer_id = serializers.IntegerField()
+    interest_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
+    tenure = serializers.IntegerField()
+    monthly_installment = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
